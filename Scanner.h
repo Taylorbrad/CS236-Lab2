@@ -1,4 +1,5 @@
-#pragma once //only compile this file once
+#ifndef SCANNER_H
+#define SCANNER_H
 #include <stack>
 #include <iostream>
 #include <fstream>
@@ -18,3 +19,4 @@ class Scanner
         ifstream inFile;
         string fileName;
 };
+#endif
