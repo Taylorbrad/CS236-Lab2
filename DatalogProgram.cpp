@@ -1,8 +1,9 @@
 #include "DatalogProgram.h"
 #include "Token.h"
+#include <string>
 // syn
 using namespace std;
-
+//improvements to be done: 1. methodize toString more. 2. make TokenTypes private variables
 
 void checkOperator();
 
@@ -12,7 +13,73 @@ DatalogProgram::DatalogProgram(stack <Token> tokensFromScanner)
 }
 string DatalogProgram::toString()
 {
-    string convertedString; //placeholder method  
+    string convertedString; //placeholder method
+
+    convertedString = "Schemes(";
+    convertedString += to_string(this->schemes.size());
+    convertedString += "):\n";
+    // 
+    while (!this->schemes.empty())
+    {
+        convertedString += "\t";
+        convertedString += this->schemes.top().toString();
+        convertedString += "\n";
+        
+        this->schemes.pop();
+    }
+    
+    convertedString += "\nFacts(";
+    convertedString += to_string(this->facts.size());
+    convertedString += "):\n";
+    
+    while (!this->facts.empty())
+    {
+        convertedString += "\t";
+        convertedString += this->facts.top().toString();
+        convertedString += "\n";
+        
+        this->facts.pop();
+    }
+    
+    convertedString += "\nRules(";
+    convertedString += to_string(this->rules.size());
+    convertedString += "):\n";
+    // 
+    while (!this->rules.empty())
+    {
+        convertedString += "\t";
+        convertedString += this->rules.top().toString();
+        convertedString += "\n";
+        
+        this->rules.pop();
+    }
+    
+    convertedString += "\nQueries(";
+    convertedString += to_string(this->queries.size());
+    convertedString += "):\n";
+    // 
+    while (!this->queries.empty())
+    {
+        convertedString += "\t";
+        convertedString += this->queries.top().toString();
+        convertedString += "\n";
+        
+        this->queries.pop();
+    }
+    
+    convertedString += "\nDomain(";
+    convertedString += to_string(this->domain.size());
+    convertedString += "):\n";
+    
+    while (!this->domain.empty())
+    {
+        convertedString += "\t";
+        convertedString += this->domain.top(); //NEEDS TO BE SORTED GUY
+        convertedString += "\n";
+        
+        this->domain.pop();
+    }
+    
     return convertedString;
 }
 void DatalogProgram::parse()
@@ -24,10 +91,12 @@ void DatalogProgram::parse()
         if (this->tokenStack.top().getTokenType() != EndOf)
         {
             // cout << this->tokenStack.top().tokenTypeToString();
-            cout << "fail here";
+            // cout << "fail here";
             throw tokenStack.top();
         }
-        cout << "Success!\n" << "Insert Datalog program output here";
+        
+        cout << "Success!\n";
+        cout << toString();
     }
     catch (Token failToken)
     {
@@ -166,10 +235,9 @@ bool DatalogProgram::isTypeExpected(stack <TokenType> typesThatItCouldBe) //poss
 }
 bool DatalogProgram::isTypeExpectedOrdered(stack <TokenType> typeToCompare)
 {
-    
     while (!typeToCompare.empty())
     {
-        // cout << "O" << tokenTypeToString(typeToCompare.top());
+        
         if (this->tokenStack.top().getTokenType() == typeToCompare.top())
         {
             
