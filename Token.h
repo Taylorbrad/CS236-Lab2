@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TOKEN_H
+#define TOKEN_H
 #include <iostream>
 #include <stack>
 using namespace std;
@@ -22,3 +23,4 @@ class Token
 };
 
 
+#endif
