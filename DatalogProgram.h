@@ -1,7 +1,10 @@
-#pragma once
+#ifndef DATALOGPROGRAM_H
+#define DATALOGPROGRAM_H
 #include <string>
 #include <stack>
 #include "Token.h"
+#include "Rule.h"
+#include "Predicate.h"
 using namespace std;
 // syn
 class DatalogProgram
@@ -12,8 +15,20 @@ class DatalogProgram
     void parse();
     
     stack <Token> tokenStack;
+    stack <string> testStack;
+    
     
     private:
+    stack <Predicate> schemes;
+    stack <Predicate> facts;
+    stack <Rule> rules;
+    stack <Predicate> queries;
+    stack <string> domain;
+    
+    Predicate currentPredicate;
+    Rule currentRule;
+    string currentDomain;
+    
     bool isTypeExpected(stack <TokenType> expectedTypes);
     bool isTypeExpectedOrdered(stack <TokenType> expectedTypesInOrder);
     
@@ -47,3 +62,4 @@ class DatalogProgram
     // vector<Predicate> rules;
     // vector<Predicate> queries;
 };
+#endif
