@@ -6,7 +6,7 @@
 #include "Scanner.h"
 #include "DatalogProgram.h"
 using namespace std;
-// syn
+// no changes made 10/18/19
 //OBJECTIVE 1: Write a parser (with recursive descent parsing form) that checks a token stream for syntax errors given the following grammar:
 
 // void checkOperator();
