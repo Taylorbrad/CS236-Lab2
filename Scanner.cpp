@@ -1,5 +1,5 @@
 #include "Scanner.h"
-#include "Token.h"
+// #include "Token.h"
 #include <cctype>
 using namespace std;
 // syn
@@ -261,7 +261,7 @@ stack <Token> Scanner::tokenize()
         
         lineNum += lineNumTemp; //Add the line increments that happened during a multiline comment, string, or undefined token
         lineNumTemp = 0;
-        
+        //
         
     } // end while !eof loop
     
@@ -391,8 +391,8 @@ TokenType setTokenType(char inChar, char nextChar)
 
 string charStackToString(stack <char> inCharStack)
 {
-    string tempString = "";
-    string stringToken = "";
+    string tempString;
+    string stringToken;
     char tempTop;
     
     stack <char> temp = inCharStack; //save the token array so that it isnt destroyed in the process. In hindsight I may not have considered scope.
@@ -405,6 +405,6 @@ string charStackToString(stack <char> inCharStack)
     }
     
     inCharStack = temp; //reload the token array to what it was
-
+    // return "test return not null";
     return stringToken;
 }
