@@ -1,6 +1,6 @@
 #include "Token.h"
 #include <string>
-// no changes made 10/18/19
+// syn
 using namespace std;
 
 Token::Token(TokenType inTokenType, stack <char> tokenFromScanner, int lineNum)

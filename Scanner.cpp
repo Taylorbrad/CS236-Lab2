@@ -313,7 +313,7 @@ stack <Token> Scanner::tokenize()
     {
         // reverseTokens.pop();
     }
-    
+    // cout << reverseTokens.top().tokenToString();
     while (!reverseTokens.empty())
     {//this is currently backwards
         tokenCounter += 1;

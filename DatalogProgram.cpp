@@ -1,16 +1,23 @@
 #include "DatalogProgram.h"
 #include "Token.h"
+// #include <bits/stdc++.h> 
+#include <algorithm>
 #include <string>
 // syn
 using namespace std;
 //improvements to be done: 1. methodize toString more. 2. make TokenTypes private variables
 
-void checkOperator();
+// void checkOperator();
+stack <Rule> reverseRuleStack(stack <Rule>);
+stack <Predicate> reversePredicateStack(stack <Predicate>);
+stack <string> reverseStringStack(stack <string>);
+
 
 DatalogProgram::DatalogProgram(stack <Token> tokensFromScanner)
 {
     this->tokenStack = tokensFromScanner;
 }
+
 string DatalogProgram::toString()
 {
     string convertedString; //placeholder method
@@ -18,7 +25,8 @@ string DatalogProgram::toString()
     convertedString = "Schemes(";
     convertedString += to_string(this->schemes.size());
     convertedString += "):\n";
-    // 
+    
+    this->schemes = reversePredicateStack(this->schemes);
     while (!this->schemes.empty())
     {
         convertedString += "\t";
@@ -28,23 +36,25 @@ string DatalogProgram::toString()
         this->schemes.pop();
     }
     
-    convertedString += "\nFacts(";
+    convertedString += "Facts(";
     convertedString += to_string(this->facts.size());
     convertedString += "):\n";
     
+    this->facts = reversePredicateStack(this->facts);
     while (!this->facts.empty())
     {
         convertedString += "\t";
         convertedString += this->facts.top().toString();
-        convertedString += "\n";
+        convertedString += ".\n";
         
         this->facts.pop();
     }
     
-    convertedString += "\nRules(";
+    convertedString += "Rules(";
     convertedString += to_string(this->rules.size());
     convertedString += "):\n";
-    // 
+    
+    this->rules = reverseRuleStack(this->rules);
     while (!this->rules.empty())
     {
         convertedString += "\t";
@@ -54,31 +64,42 @@ string DatalogProgram::toString()
         this->rules.pop();
     }
     
-    convertedString += "\nQueries(";
+    convertedString += "Queries(";
     convertedString += to_string(this->queries.size());
     convertedString += "):\n";
-    // 
+    
+    this->queries = reversePredicateStack(this->queries);
     while (!this->queries.empty())
     {
         convertedString += "\t";
         convertedString += this->queries.top().toString();
-        convertedString += "\n";
+        convertedString += "?\n";
         
         this->queries.pop();
     }
     
-    convertedString += "\nDomain(";
-    convertedString += to_string(this->domain.size());
+    // int domainSize = sizeof(this->domain);
+    
+    convertedString += "Domain(";
+    convertedString += to_string(this->domainSize);
     convertedString += "):\n";
     
-    while (!this->domain.empty())
+    stringArraySort();
+    while (this->domainSize > 0)
     {
         convertedString += "\t";
-        convertedString += this->domain.top(); //NEEDS TO BE SORTED GUY
+        convertedString += this->domain[this->domainSize - 1];
         convertedString += "\n";
-        
-        this->domain.pop();
+        this->domainSize--;
     }
+    // while (!this->domain.empty())
+    // {
+    //     convertedString += "\t";
+    //     convertedString += this->domain.top(); //NEEDS TO BE SORTED GUY
+    //     convertedString += "\n";
+        
+    //     this->domain.pop();
+    // }
     
     return convertedString;
 }
@@ -113,6 +134,57 @@ void DatalogProgram::parse()
     // cout << "Failure!\n  " << failedToken.toString();
     // this->parseFailFlag = true; //this flag tells the methods that parse has failed due to a syntax error, so stop trying
 // }
+stack <Rule> reverseRuleStack(stack <Rule> inRuleStack)
+{
+    stack <Rule> outRuleStack;
+    while (!inRuleStack.empty())
+    {
+        outRuleStack.push(inRuleStack.top());
+        inRuleStack.pop();
+    }
+    return outRuleStack;
+}
+stack <Predicate> reversePredicateStack(stack <Predicate> inPredicateStack)
+{
+    stack <Predicate> outPredicateStack;
+    while (!inPredicateStack.empty())
+    {
+        outPredicateStack.push(inPredicateStack.top());
+        inPredicateStack.pop();
+    }
+    
+    return outPredicateStack;
+}
+stack <string> reverseStringStack(stack <string> inStringStack)
+{
+    stack <string> outStringStack;
+    while (!inStringStack.empty())
+    {
+        outStringStack.push(inStringStack.top());
+        inStringStack.pop();
+    }
+    
+    return outStringStack;
+}
+bool DatalogProgram::isDuplicateStringInDomain(string inString)
+{
+    int tempSize = this->domainSize;
+    
+    while (tempSize > 0)
+    {
+        if (inString == this->domain[tempSize - 1])
+        {
+            return true;
+        }
+        tempSize--;
+    }
+    return false;
+}
+void DatalogProgram::stringArraySort()
+{
+    sort(begin(this->domain), end(this->domain), greater<>());
+}
+
 string tokenTypeToString(TokenType inTokenType) //For debugging only
 {
     switch(inTokenType)
@@ -235,13 +307,14 @@ bool DatalogProgram::isTypeExpected(stack <TokenType> typesThatItCouldBe) //poss
 }
 bool DatalogProgram::isTypeExpectedOrdered(stack <TokenType> typeToCompare)
 {
+    stack <Token> tokensCopy = this->tokenStack;
+    
     while (!typeToCompare.empty())
     {
         
-        if (this->tokenStack.top().getTokenType() == typeToCompare.top())
+        if (tokensCopy.top().getTokenType() == typeToCompare.top())
         {
-            
-            this->tokenStack.pop();
+            tokensCopy.pop(); //changed so I dont pop the main tokenStack here
             typeToCompare.pop();
         }
         else
@@ -251,7 +324,28 @@ bool DatalogProgram::isTypeExpectedOrdered(stack <TokenType> typeToCompare)
     }
     return true;
 }
-//non-member methods <-- fake news
+void DatalogProgram::setPredicateStart()
+{
+    this->headString = tokenStack.top().tokenToString();
+    this->tokenStack.pop();
+    this->tokenStack.pop();
+    // this->currentString = tokenStack.top().tokenToString();
+    this->toMakePredicate.push(tokenStack.top().tokenToString());
+    
+    if (this->domainSize == 0 && isFactString)
+    {
+        this->domain[0] = tokenStack.top().tokenToString();
+        // cout << "--->"  << this->domain[0] << "<--";
+        this->domainSize++;
+    }
+    else if (!isDuplicateStringInDomain(tokenStack.top().tokenToString()) && isFactString)
+    {
+        this->domain[domainSize] = tokenStack.top().tokenToString();
+        this->domainSize++;
+    }
+    
+    this->tokenStack.pop();
+}
 
 
 //recursive descent below:
@@ -259,9 +353,20 @@ bool DatalogProgram::isTypeExpectedOrdered(stack <TokenType> typeToCompare)
 void DatalogProgram::checkDatalogProgram()
 {
     stack <TokenType> orderOfTypes;
+    stack <TokenType> firstType;
+    stack <TokenType> secondType;
+    
     stack <TokenType> secondOrder;
+    stack <TokenType> thirdType;
+    stack <TokenType> fourthType;
+    
     stack <TokenType> thirdOrder;
+    stack <TokenType> fifthType;
+    stack <TokenType> sixthType;
+    
     stack <TokenType> fourthOrder;
+    stack <TokenType> seventhType;
+    stack <TokenType> eighthType;
     
     TokenType schemes = SCHEMES;
     TokenType facts = FACTS;
@@ -284,6 +389,8 @@ void DatalogProgram::checkDatalogProgram()
     
     if (isTypeExpectedOrdered(orderOfTypes))
     {
+        this->tokenStack.pop();
+        this->tokenStack.pop();
         checkScheme();
         checkSchemeList();
     }
@@ -294,6 +401,8 @@ void DatalogProgram::checkDatalogProgram()
     
     if (isTypeExpectedOrdered(secondOrder))
     {
+        this->tokenStack.pop();
+        this->tokenStack.pop();
         checkFactList();
     }
     else
@@ -303,6 +412,8 @@ void DatalogProgram::checkDatalogProgram()
     
     if (isTypeExpectedOrdered(thirdOrder))
     {
+        this->tokenStack.pop();
+        this->tokenStack.pop();
         checkRuleList();
     }
     else
@@ -312,6 +423,8 @@ void DatalogProgram::checkDatalogProgram()
     
     if (isTypeExpectedOrdered(fourthOrder))
     {
+        this->tokenStack.pop();
+        this->tokenStack.pop();
         checkQuery();
         checkQueryList();
     }
@@ -427,7 +540,6 @@ void DatalogProgram::checkQueryList()
     
 }
 
-
 void DatalogProgram::checkScheme()
 {
     stack <TokenType> orderOfTypes;
@@ -444,12 +556,21 @@ void DatalogProgram::checkScheme()
     
     if (isTypeExpectedOrdered(orderOfTypes))
     {
+        setPredicateStart();
         checkIdList();
     }
     else
     {
         throw this->tokenStack.top(); //fail
     }
+    // this->schemes.push(this->currentPredicate);
+    this->toMakePredicate = reverseStringStack(this->toMakePredicate);
+    
+    this->schemes.push(Predicate(this->headString, this->toMakePredicate));
+    this->currentPredicate = Predicate(); //empty currentPredicate & other private vars for next go around
+    this->currentString = this->emptyString;
+    this->headString = this->emptyString;
+    this->toMakePredicate = this->emptyStringStack;
     
     secondExpectedType.push(rightParen);
     
@@ -466,6 +587,7 @@ void DatalogProgram::checkScheme()
 }
 void DatalogProgram::checkFact()
 {
+    this->isFactString = true;
     stack <TokenType> orderOfTypes;
     stack <TokenType> secondOrder;
     
@@ -485,27 +607,43 @@ void DatalogProgram::checkFact()
     
     if (isTypeExpectedOrdered(orderOfTypes))
     {
+        setPredicateStart();
+        // this->isFactString = false;
+        
+        // this->isFactString = false;
         checkStringList(); //RIGHT_PAREN is checked, but not popped at the end of this method
+        // this->isFactString = true;
+        this->isFactString = false;
     }
     else
     {
         throw this->tokenStack.top(); //fail
     }
+    this->isFactString = false;
+    
+    this->toMakePredicate = reverseStringStack(this->toMakePredicate);
+    
+    this->facts.push(Predicate(this->headString, toMakePredicate));
+    this->currentPredicate = Predicate(); //empty currentPredicate & other private vars for next go around
+    this->currentString = this->emptyString;
+    this->headString = this->emptyString;
+    this->toMakePredicate = this->emptyStringStack;
     
     if (isTypeExpectedOrdered(secondOrder)) //if is RIGHT_PAREN, then PERIOD.
     {
-        // this->tokenStack.pop();
+        this->tokenStack.pop();
+        this->tokenStack.pop();
         return; //return
     }
     else
     {
         throw this->tokenStack.top(); //fail
     }
+    
 }
-
 void DatalogProgram::checkRule()
 {
-    checkHeadPredicate();
+    checkHeadPredicate(); //You will have set this->headPredicate by the end of this function
     
     stack <TokenType> expectedType;
     stack <TokenType> secondType;
@@ -521,6 +659,10 @@ void DatalogProgram::checkRule()
     {
         this->tokenStack.pop();
         checkPredicate();
+        
+        this->headString = this->emptyString;
+        this->toMakePredicate = this->emptyStringStack;
+        
         checkPredicateList();
     }
     else
@@ -528,6 +670,22 @@ void DatalogProgram::checkRule()
         // cout << "fail here";
         throw this->tokenStack.top(); //fail
     }
+    // currentRule = Rule(this->headPredicate, this->toMakeRule);
+    
+    
+    // while (!this->toMakeRule.empty())
+    // {
+    //     this->reversePredicates.push(this->toMakeRule.top());
+    //     this->toMakeRule.pop();
+    // }
+    
+    this->toMakeRule = reversePredicateStack(this->toMakeRule);
+    
+    this->rules.push(Rule(this->headPredicate, this->toMakeRule));
+    this->headString = this->emptyString;
+    this->toMakePredicate = this->emptyStringStack;
+    this->reversePredicates = this->emptyPredicateStack;
+    this->toMakeRule = emptyPredicateStack;
     
     
     if (isTypeExpected(secondType))
@@ -541,7 +699,6 @@ void DatalogProgram::checkRule()
         throw this->tokenStack.top(); //fail
     }
 }
-
 void DatalogProgram::checkQuery()
 {
     checkPredicate();
@@ -551,6 +708,10 @@ void DatalogProgram::checkQuery()
     TokenType qMark = Q_MARK;
     
     expectedType.push(qMark);
+    
+    this->queries.push(Predicate(headString, toMakePredicate));
+    
+    this->toMakePredicate = this->emptyStringStack;
     
     if (isTypeExpected(expectedType))
     {
@@ -582,14 +743,20 @@ void DatalogProgram::checkHeadPredicate()
     
     if (isTypeExpectedOrdered(orderOfTypes))
     {
-        checkIdList();
+        setPredicateStart(); //You will have set headString by the end of this function
+        checkIdList(); //you will have finished toMakePredicate by the end of this function
     }
     else
     {
         // cout << "fail here";
         throw this->tokenStack.top(); //fail
     }
-    // cout << "well here we are";
+    this->toMakePredicate = reverseStringStack(this->toMakePredicate);
+    
+    this->headPredicate = Predicate(this->headString, this->toMakePredicate);
+    this->headString = this->emptyString;
+    this->toMakePredicate = this->emptyStringStack;
+    
     if (isTypeExpected(secondType))
     {
         this->tokenStack.pop();
@@ -613,11 +780,22 @@ void DatalogProgram::checkPredicate()
     
     orderOfTypes.push(leftParen);
     orderOfTypes.push(id);
+    
     secondType.push(rightParen);
     
     if (isTypeExpectedOrdered(orderOfTypes))
     {
+        this->headString = tokenStack.top().tokenToString();
+        this->tokenStack.pop();
+        this->tokenStack.pop();
+        
         checkParameter();
+        if (isFromExpression)
+        {
+            toMakePredicate.push(this->expression);
+            this->expression = emptyString;
+        }
+        isFromExpression = false;
         checkParameterList();
     }
     else
@@ -625,6 +803,10 @@ void DatalogProgram::checkPredicate()
         // cout << "fail here";
         throw this->tokenStack.top(); //fail
     }
+    this->toMakePredicate = reverseStringStack(this->toMakePredicate);
+    
+    this->toMakeRule.push(Predicate(headString, toMakePredicate));
+    //probably set things to empty I think here
     
     if (isTypeExpected(secondType))
     {
@@ -653,6 +835,7 @@ void DatalogProgram::checkPredicateList()
     {
         this->tokenStack.pop();
         checkPredicate();
+        this->toMakePredicate = this->emptyStringStack;
         checkPredicateList();
     }
     else if (isTypeExpected(followType))
@@ -682,6 +865,12 @@ void DatalogProgram::checkParameterList()
     {
         this->tokenStack.pop();
         checkParameter();
+        if (isFromExpression)
+        {
+            toMakePredicate.push(this->expression);
+            this->expression = emptyString;
+        }
+        isFromExpression = false;
         checkParameterList();
     }
     else if (isTypeExpected(followType)) //if is RIGHT_PAREN
@@ -697,19 +886,22 @@ void DatalogProgram::checkParameterList()
 void DatalogProgram::checkStringList()
 {
     stack <TokenType> orderOfTypes;
+    stack <TokenType> firstType;
+    stack <TokenType> secondType;
     stack <TokenType> followType; //the type to check for in case stringlist is lambda
     
     TokenType comma = COMMA;
     TokenType string = STRING;
     TokenType rightParen = RIGHT_PAREN;
     
-    orderOfTypes.push(string); //push string first, so it is checked second
-    orderOfTypes.push(comma);
+    firstType.push(comma);
+    secondType.push(string);
+    
     followType.push(rightParen);
     
-    if (isTypeExpectedOrdered(orderOfTypes))
+    if (isTypeExpected(firstType))
     {
-        checkStringList();
+        this->tokenStack.pop();
     }
     else if (isTypeExpected(followType))
     {
@@ -719,32 +911,85 @@ void DatalogProgram::checkStringList()
     else
     //update: I think lambda is simply a check for the followw set, and then you return to the mother method
     {
+        // cout << "fancee";
         throw this->tokenStack.top();//fail
     }
+    
+    if(isTypeExpected(secondType))
+    {
+        this->currentString = tokenStack.top().tokenToString();
+        // cout << currentString;
+        if (isFactString)
+        {
+            // cout << "true";
+            if (this->domainSize == 0)
+            {
+                this->domain[0] = currentString;
+                // cout << "--->"  << this->domain[0] << "<--";
+                this->domainSize++;
+            }
+            else if (!isDuplicateStringInDomain(currentString))
+            {
+                // cout <<"Gotetn";
+                this->domain[domainSize] = currentString;
+                this->domainSize++;
+            }
+        }
+        else
+        {
+            // cout << "false";
+        }
+        this->toMakePredicate.push(currentString);
+        this->tokenStack.pop();
+        checkStringList();
+    }
+    else
+    {
+        throw this->tokenStack.top();
+    }
+    
 
 }
 
 void DatalogProgram::checkIdList()
 {
-    stack <TokenType> orderOfTypes;
+    // cout <<"true";
+    
+    stack <TokenType> firstType;
+    stack <TokenType> secondType;
     stack <TokenType> followType;
     
     TokenType comma = COMMA;
     TokenType id = ID;
     TokenType rightParen = RIGHT_PAREN;
     
-    orderOfTypes.push(id); //push ID first, so it is checked second
-    orderOfTypes.push(comma);
+    firstType.push(comma);
+    secondType.push(id);
+    
     followType.push(rightParen);
     
-    if (isTypeExpectedOrdered(orderOfTypes)) //if is COMMA then ID
+    if (isTypeExpected(firstType))
     {
-        checkIdList();
+        this->tokenStack.pop();
     }
     else if (isTypeExpected(followType))
     {
-        // this->tokenStack.pop();
         return;
+    }
+    else
+    {
+        throw this->tokenStack.top();
+    }
+    
+    if (isTypeExpected(secondType)) //if is COMMA then ID
+    {
+        // cout <<"true2";
+        // this->tokenStack.pop();
+        this->currentString = tokenStack.top().tokenToString();
+        this->toMakePredicate.push(currentString);
+        this->tokenStack.pop();
+        
+        checkIdList();
     }
     else 
     {
@@ -769,15 +1014,26 @@ void DatalogProgram::checkParameter()
         
         expectedTypes.push(id);
         expectedTypes.push(string);
+        
         secondExpectedType.push(leftParen);
         
         if (isTypeExpected(expectedTypes)) //check if currentTypeStack is a string, or an id
         {
+            if (isFromExpression)
+            {
+                this->expression += this->tokenStack.top().tokenToString();
+            }
+            else
+            {
+                toMakePredicate.push(this->tokenStack.top().tokenToString());
+            }
+            // cout << this->tokenStack.top().tokenToString();
             this->tokenStack.pop();
             return;
         }
         else if (isTypeExpected(secondExpectedType)) //if is an expression
         {
+            isFromExpression = true;
             checkExpression();
         }
         else
@@ -802,12 +1058,15 @@ void DatalogProgram::checkExpression()
     
     if (isTypeExpected(expectedType)) //check if first type matches LEFT_PAREN
     {
+        this->expression += tokenStack.top().tokenToString();
+        // toMakePredicate.push(tokenStack.top().tokenToString());
         this->tokenStack.pop();
+        
         checkParameter();
         checkOperator();
         checkParameter();
         
-        expectedType.pop();//this could be an issue if there are more sets of left parenthesis inside the first set, ie ('3'+'2'('2'))
+        expectedType.pop();//this could be an issue if there are more sets of left parenthesis inside the first set ie ('3'+'2'('2'))
         expectedType.push(rightParen);
     }
     else
@@ -821,7 +1080,10 @@ void DatalogProgram::checkExpression()
     
     if (isTypeExpected(expectedType)) //check if is equivalent to RIGHT_PAREN. This is the end of the checks
     {
+        this->expression += tokenStack.top().tokenToString();
+        // toMakePredicate.push(tokenStack.top().tokenToString());
         this->tokenStack.pop();
+        // isFromExpression = false;
         return;
     }
     else
@@ -852,6 +1114,9 @@ void DatalogProgram::checkOperator()
         
         if (isTypeExpected(expectedTypes)) //AKA is current type an ADD or MULTIPLY symbol?
         {
+            this->expression += this->tokenStack.top().tokenToString();
+            // toMakePredicate.push(this->tokenStack.top().tokenToString());
+            // this->toMakePredicate.push(this->tokenStack.top().tokenToString());
             this->tokenStack.pop();
             return;
         }

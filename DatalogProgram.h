@@ -19,18 +19,36 @@ class DatalogProgram
     
     
     private:
+    bool isFactString = false;
+    bool isFromExpression = false;
+    int domainSize = 0;
     stack <Predicate> schemes;
     stack <Predicate> facts;
     stack <Rule> rules;
     stack <Predicate> queries;
-    stack <string> domain;
+    string domain[100];
+    stack <Predicate> reversePredicates;
+    stack <Rule> reverseRules;
+    stack <string> reverseStrings;
     
     Predicate currentPredicate;
+    Predicate headPredicate;
     Rule currentRule;
-    string currentDomain;
+    string headString;
+    string currentString;
+    string expression;
+    stack <string> toMakePredicate;
+    stack <string> emptyStringStack;
+    stack <Predicate> emptyPredicateStack;
+    stack <Predicate> toMakeRule;
+    string emptyString;
     
     bool isTypeExpected(stack <TokenType> expectedTypes);
     bool isTypeExpectedOrdered(stack <TokenType> expectedTypesInOrder);
+    void setPredicateStart();
+    bool isDuplicateStringInDomain(string inString);
+    void addToDomainAplhabetically(string);
+    void stringArraySort();
     
     void checkDatalogProgram();
     
